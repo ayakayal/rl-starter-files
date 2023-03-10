@@ -65,6 +65,7 @@ parser.add_argument("--text", action="store_true", default=False,
 if __name__ == "__main__":
     args = parser.parse_args()
     print('hello')
+    print('hello there')
     args.mem = args.recurrence > 1
 
     # Set run dir
