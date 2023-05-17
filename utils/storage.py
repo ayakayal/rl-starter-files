@@ -17,12 +17,15 @@ def create_folders_if_necessary(path):
 def get_storage_dir():
     if "RL_STORAGE" in os.environ:
         return os.environ["RL_STORAGE"]
-    return "storage"
+    return "storage/keydoor_1M"
 
 
 def get_model_dir(model_name):
     return os.path.join(get_storage_dir(), model_name)
 
+def get_model_dir_folder(folder_name,model_name):
+    return os.path.join( f'storage/{folder_name}', model_name)
+   
 
 def get_status_path(model_dir):
     return os.path.join(model_dir, "status.pt")

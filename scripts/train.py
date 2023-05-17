@@ -8,8 +8,6 @@ import sys
 import utils
 from utils import device
 from model import ACModel
-
-
 # Parse arguments
 
 parser = argparse.ArgumentParser()
@@ -61,9 +59,12 @@ parser.add_argument("--recurrence", type=int, default=1,
                     help="number of time-steps gradient is backpropagated (default: 1). If > 1, a LSTM is added to the model to have memory.")
 parser.add_argument("--text", action="store_true", default=False,
                     help="add a GRU to the model to handle text input")
+parser.add_argument("--ir-coef", type=float, default=0.001,
+                    help="entropy intrinsic reward coefficient (default: 0.01)")
+args = parser.parse_args()
 
-if __name__ == "__main__":
-    args = parser.parse_args()
+def main():
+    
     print('hello')
     print('hello there')
     args.mem = args.recurrence > 1
@@ -113,6 +114,9 @@ if __name__ == "__main__":
     # Load observations preprocessor
 
     obs_space, preprocess_obss = utils.get_obss_preprocessor(envs[0].observation_space)
+    #print("envs[0].observation_space",envs[0].observation_space)
+    #print('obs space', obs_space)
+    #print('pre process obs space', preprocess_obss)
     if "vocab" in status:
         preprocess_obss.vocab.load_vocab(status["vocab"])
     txt_logger.info("Observations preprocessor loaded")
@@ -132,10 +136,27 @@ if __name__ == "__main__":
         algo = torch_ac.A2CAlgo(envs, acmodel, device, args.frames_per_proc, args.discount, args.lr, args.gae_lambda,
                                 args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
                                 args.optim_alpha, args.optim_eps, preprocess_obss)
+        #print("frames per proc",args.frames_per_proc)
     elif args.algo == "ppo":
         algo = torch_ac.PPOAlgo(envs, acmodel, device, args.frames_per_proc, args.discount, args.lr, args.gae_lambda,
                                 args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
                                 args.optim_eps, args.clip_eps, args.epochs, args.batch_size, preprocess_obss)
+    elif args.algo=="a2c_entropy":
+        algo=torch_ac. A2CAlgoEntropy(envs, acmodel, device, args.frames_per_proc, args.discount, args.lr, args.gae_lambda,
+                                args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
+                                args.optim_alpha, args.optim_eps, preprocess_obss, args.ir_coef)
+    elif args.algo=="a2c_state_count":
+        algo=torch_ac. A2CAlgoStateCount(envs, acmodel, device, args.frames_per_proc, args.discount, args.lr, args.gae_lambda,
+                                args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
+                                args.optim_alpha, args.optim_eps, preprocess_obss,args.ir_coef)
+    elif args.algo=="a2c_icm":
+        algo=torch_ac.A2CAlgoICM(envs, acmodel, device, args.frames_per_proc, args.discount, args.lr, args.gae_lambda,
+                                args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
+                                args.optim_alpha, args.optim_eps, preprocess_obss,args.ir_coef)
+    elif args.algo=="a2c_icm_inverse":
+        algo=torch_ac.A2CAlgoICM_inverse(envs, acmodel, device, args.frames_per_proc, args.discount, args.lr, args.gae_lambda,
+                            args.entropy_coef, args.value_loss_coef, args.max_grad_norm, args.recurrence,
+                            args.optim_alpha, args.optim_eps, preprocess_obss,args.ir_coef)
     else:
         raise ValueError("Incorrect algorithm name: {}".format(args.algo))
 
@@ -150,6 +171,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     while num_frames < args.frames:
+
         # Update model parameters
         update_start_time = time.time()
         exps, logs1 = algo.collect_experiences()
@@ -202,3 +224,9 @@ if __name__ == "__main__":
                 status["vocab"] = preprocess_obss.vocab.vocab
             utils.save_status(status, model_dir)
             txt_logger.info("Status saved")
+
+
+
+
+if __name__ == "__main__":
+    main()
