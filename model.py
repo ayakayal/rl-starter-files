@@ -18,12 +18,14 @@ def init_params(m):
 
 
 class ACModel(nn.Module, torch_ac.RecurrentACModel): #change it back to RecurrentACModel
-    def __init__(self, obs_space, action_space, use_memory=False, use_text=False):
+    def __init__(self, obs_space, action_space, use_memory=False, use_text=False, use_diayn=False,num_skills=10):
         super().__init__()
         #print('pedro')
         # Decide which components are enabled
         self.use_text = use_text
         self.use_memory = use_memory
+        self.use_diayn= use_diayn
+        self.num_skills=num_skills
 
         # Define image embedding
         self.image_conv = nn.Sequential(
@@ -49,6 +51,9 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel): #change it back to Recurren
             self.word_embedding = nn.Embedding(obs_space["text"], self.word_embedding_size)
             self.text_embedding_size = 128
             self.text_rnn = nn.GRU(self.word_embedding_size, self.text_embedding_size, batch_first=True)
+        print('self.use_diayn',self.use_diayn)
+        if self.use_diayn:
+            self.image_embedding_size+= self.num_skills
 
         # Resize image embedding
         self.embedding_size = self.semi_memory_size
@@ -80,8 +85,8 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel): #change it back to Recurren
     def semi_memory_size(self):
         return self.image_embedding_size
 
-    def forward(self, obs, memory):
-        #print('obs',obs)
+    def forward(self, obs, memory,skill=None): #put skill here and fix
+        #print('skill here',skill)
         x = obs.image.transpose(1, 3).transpose(2, 3)
         #print('x',x.shape)
         x = self.image_conv(x)
@@ -97,10 +102,18 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel): #change it back to Recurren
            
         else:
             embedding = x
+     
 
         if self.use_text:
             embed_text = self._get_embed_text(obs.text)
             embedding = torch.cat((embedding, embed_text), dim=1)
+
+        if self.use_diayn:
+            #print('skill',skill)
+            #
+            #print('embedding',embedding.shape)
+            embedding= torch.cat((embedding,skill),dim=1)
+            #print('embedding shape',embedding.shape)
 
         x = self.actor(embedding)
         dist = Categorical(logits=F.log_softmax(x, dim=1))
