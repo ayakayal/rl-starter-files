@@ -20,12 +20,12 @@ def process_row(row_number,rows_saved,grid_rows,grid_cols):
                 if matrix_dict[j,i] > 0.05:
                     matrix_dict[j,i]=0.05
                 print('dict after',j,' ',i,' ',matrix_dict[j,i]) 
-                                 
+                                
          
     # print(matrix_dict[1,10]*N)
     #max_matrix_dict= np.max(matrix_dict)
     max_matrix_dict= 0.05
-    # # #add this for RedBlue only
+    # # #add this for RedBlue only because I did mistake: 16x16 csv file saved
     new_matrix= np.zeros((8, 16))
     
     for i in range(8):
